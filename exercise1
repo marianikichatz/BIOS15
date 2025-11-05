@@ -1,0 +1,53 @@
+#Use non-parametric bootstrapping to derive a 95% confidence interval for the CV of a variable.
+#Start by writing a function that computes the CV for a variable (see the Appendix for a brief introduction
+#to writing functions in R). Then, simulate a random variable and write a loop that samples many times from
+#this variable and computes the CV.
+
+# Function to compute the Coefficient of Variation (CV)
+cv_function <- function(x) {
+    m <- mean(x)
+    if (m == 0) {
+        return(NA)
+     }
+    return(sd(x)/m)
+}
+
+# Simulate a random variable
+set.seed(4) 
+random_variable <- rnorm(50,10,2)
+
+result <- NULL
+for (i in 1:1000) {
+    sample_data <- sample(random_variable, replace = TRUE)
+    result[i]<- cv_function(sample_data)
+}
+
+hist(result, las=1, main="", col="pink", xlab="CV")
+quantile(result, c(0.025, 0.975))
+
+#The proportional properties of the natural log
+
+#Use simulated data to show the close relationship between the SD of log-transformed data and the CV on
+#arithmetic scale. You may need e.g. the rnorm function and a for-loop to achieve this. One strategy would
+#be to start with comparing the two values for a single case, then build a matrix to hold the paired values,
+#and finally use a for-loop to populate the matrix. See Appendix 1 for help to get started with programming.
+
+sd_log_function <- function(x) {
+    return(sd(log(x)))
+}
+
+set.seed(3)
+
+
+my_matrix <- matrix(nrow=length(random_values), ncol=2)
+
+for (i in 1:1000){
+    random_values <- rnorm(50,10,2)
+    my_matrix[i,1] <- cv_function(random_values)
+    my_matrix[i,2] <- sd_log_function(random_values)
+}
+
+print(my_matrix)
+
+plot(my_matrix, xlab="CV", ylab="SDlog", col="purple")
+abline(a = 0, b = 1, col = "skyblue")
