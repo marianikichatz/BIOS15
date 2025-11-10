@@ -1,0 +1,152 @@
+set.seed(85)
+x = rnorm(n=200, mean=10, sd=2)
+y = 0.4*x + rnorm(200, 0, 1)
+plot(x, y, las=1, xlab="Leaf length (mm)", ylab="Leaf width (mm)")
+
+m = lm(y~x)  # m holds the fitted model
+str(m) #str function -> return a list of components available within the object
+cf = m$coef
+cf
+
+#To obtain the predicted values from the model, we pull out (using square brackets [] to index elements of a
+#vector) the relevant parameter estimates (intercept and slope), and compute the predicted values using the
+# equation for the linear model we just fitted. Below we also add line segments (using the segments function)
+# from the predicted values to the actual value of the response variable, illustrating the residuals.
+predvals = cf[1] + cf[2]*x
+par(mfrow=c(1,2))
+plot(x, y, las=1, xlab="Leaf length (mm)", ylab="Leaf width (mm)")
+abline(m)
+segments(x, y, x, predvals)
+hist(residuals(m), xlab="", las=1)
+
+#plot function is generic, it produces a different result depending on what is fed to it
+par(mfrow=c(2,2))
+plot(m)
+
+#To keep the regression line within the data range, it is better to make predictions 
+# for new values of x spanning the data range and add the regression line using the lines function
+newx = seq(min(x), max(x), length.out=200)
+predy = cf[1] + cf[2]*newx
+plot(x, y, las=1, xlab="Leaf length (mm)", ylab="Leaf width (mm)")
+lines(newx, predy)
+
+summary(m)
+dev.off()
+
+df = data.frame(x, y)
+head(df)
+
+cov(y,x)/var(x)
+
+(cf[2]*(mean(x) + sd(x)))- (cf[2]*mean(x))
+
+#simple univariate regression, the r2 is simply the square of the Pearson correlation coefficient r 
+# between the response and predictor
+cor(x,y)^2
+
+y_hat = cf[1] + cf[2]*x
+var(y_hat)
+var(y_hat)/var(y)
+cf[2]^2*var(x)
+
+
+#Exercise: fitting a linear regression to real data
+
+birds = read.csv("bird_allometry.csv")
+head(birds)
+
+# Based on these data, we will estimate the allometric slopes and intercepts for the brain-body scaling
+# and ask whether these are similar in males and females. 
+# To do so, we start by splitting the data into males and females.
+males = birds[birds$Sex=="m",]
+females = birds[birds$Sex=="f",]
+
+# we fit linear models to log-transformed brain- and body-sizes
+mm = lm(log(brain_mass)~log(body_mass), data=males)
+mf = lm(log(brain_mass)~log(body_mass), data=females)
+
+hist(residuals(mm))
+hist(residuals(mf))
+summary(mm)
+summary(mf)
+
+plot( log(brain_mass) ~ log(body_mass), data = birds,
+  col = ifelse(birds$Sex == "m", "blue", "red"),
+  pch = 19, las = 1,
+  xlab = "log(Body mass)", ylab = "log(Brain mass)",
+  main = "Brain vs Body Mass (Allometric Scaling)")
+
+abline(mm, col = "blue", lwd = 2)
+abline(mf, col = "red", lwd = 2)
+legend("topright", legend = c("Males", "Females"), col = c("blue", "red"), lwd = 2, pch = 19)
+
+#second way 
+install.packages("ggplot2")
+library(ggplot2)
+ggplot(birds, aes(x = log(body_mass), y = log(brain_mass), color = Sex)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 1) +
+  labs(x = "log(Body mass)", y = "log(Brain mass)",
+       title = "Brain vs Body Mass by Sex") +
+  scale_color_manual(values = c("m" = "blue", "f" = "red")) +
+  theme_minimal()
+
+
+# Optional exercise: How error in x- and y-variables affect the slope
+
+set.seed(123)
+
+n <- 200
+beta0 <- 2
+beta1 <- 0.8
+
+x_true <- rnorm(n, mean = 10, sd = 2)
+y <- beta0 + beta1 * x_true + rnorm(n, 0, 1)
+m_true <- lm(y ~ x_true)
+summary(m_true)$coef
+
+sigma_me <- 1
+x_obs <- x_true + rnorm(n, 0, sigma_me)
+
+m_me <- lm(y ~ x_obs)
+
+plot(x_obs, y, pch=19, col="gray60", las=1,
+     xlab="Observed x (with measurement error)",
+     ylab="y", main="Effect of measurement error in predictor")
+
+abline(m_true, col="blue", lwd=2)    # true line
+abline(m_me, col="red", lwd=2)       # biased line
+
+legend("topright", legend=c("True slope", "With measurement error"),
+       col=c("blue","red"), lwd=2, bty="n")
+
+# Correct the bias using the reliability ratio
+sigma_x <- var(x_true)
+sigma_me2 <- sigma_me^2
+K <- 1 - sigma_me2 / sigma_x
+
+beta1_hat <- coef(m_me)[2]
+beta1_corr <- beta1_hat / K
+
+beta1_hat
+beta1_corr
+
+plot(c(1,2), c(beta1_hat, beta1_corr),
+     xlim=c(0.8,2.2), ylim=c(0,1.0),
+     xaxt="n", xlab="", ylab="Slope estimate", pch=19, col=c("red","darkgreen"))
+axis(1, at=c(1,2), labels=c("Estimated","Corrected"))
+segments(1, beta1_hat, 2, beta1_corr, col="gray40", lwd=2)
+abline(h=beta1, col="blue", lty=2)
+legend("topleft", legend=c("True slope"), col="blue", lty=2, bty="n")
+
+
+y_me <- y + rnorm(n, 0, sigma_me)
+m_yerr <- lm(y_me ~ x_true)
+summary(m_yerr)$coef
+plot(x_true, y_me, pch=19, col="gray60", las=1,
+     xlab="True x",
+     ylab="Observed y (with measurement error)",
+     main="Effect of measurement error in response")
+abline(m_true, col="blue", lwd=2)    # true line
+abline(m_yerr, col="red", lwd=2)     # biased line
+# The slope is unbiased
