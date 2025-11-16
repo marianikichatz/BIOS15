@@ -63,6 +63,21 @@ summary_stats = dat %>%
 
 summary_stats
 
+summary_stats_table <- summary_stats %>%
+  rename(`Maternal Host` = MaternalHost,
+    `Larval Host` = LarvalHost,
+    `Mean Development Time (days)` = mean_development_time,
+    `SE (days)` = se_development_time) %>%
+  gt() %>%
+  tab_header(title = "Table 1: Effects of Host Plants on Larval Development Time",
+    subtitle = "Mean Values and Standard Errors by Maternal and Larval Host Plants") %>%
+  fmt_number(
+    columns = c(`Mean Development Time (days)`, `SE (days)`),)
+
+summary_stats_table
+gtsave(summary_stats_table, "summary_stats_table.html")
+
+
 p = ggplot(summary_stats, aes(x = LarvalHost, y = mean_development_time, color = MaternalHost, group = MaternalHost)) +
   geom_point(size = 3) +  
   geom_line() +           
@@ -88,7 +103,7 @@ anova_table = broom::tidy(anova_model) %>%
 
 anova_table_gt = anova_table %>%
   gt() %>%
-  tab_header( title = "Table 1: Two-Way ANOVA Results",
+  tab_header( title = "Table 2: Two-Way ANOVA Results",
     subtitle = "Effects of Maternal and Larval Host on Development Time") 
 
 anova_table_gt
