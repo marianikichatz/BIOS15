@@ -65,3 +65,14 @@ x1_m = (x1- mean(x1))/mean(x1)
 x2_m = (x2- mean(x2))/mean(x2)
 summary(lm(y~ x1_m + x2_m))
 
+#Multicollinearity
+#assessing the degree of multicollinearity is to compute variance inflation factors
+#variance inflation factor for covariate x1
+
+m1 = lm(x1~x2)
+r2 = summary(m1)$r.squared
+1/(1-r2)
+
+# Data exercise: multiple regression and variable selection
+
+plants = read.csv(file="exercise_4/alpineplants.csv")
