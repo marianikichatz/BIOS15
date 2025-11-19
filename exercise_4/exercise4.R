@@ -74,5 +74,56 @@ r2 = summary(m1)$r.squared
 1/(1-r2)
 
 # Data exercise: multiple regression and variable selection
+library(ggplot2)
 
 plants = read.csv(file="exercise_4/alpineplants.csv")
+
+head(plants)
+str(plants)
+summary(plants)
+
+ggplot(plants, aes(x = altitude)) +
+  geom_histogram(fill = "pink", color = "plum") +
+  labs(title="Altitude distribution")
+
+ggplot(plants, aes(y = Carex.bigelowii)) +
+  geom_boxplot(fill = "pink", color = "plum") +
+  labs(title="Outlier check for Carex.bigelowii")
+
+ggplot(plants, aes(x = Carex.bigelowii)) +
+  geom_histogram(fill = "lightyellow", color = "lightyellow") +
+  labs(title = "Carex.bigelowii abundance")
+
+ggplot(plants, aes(x = light)) +
+  geom_histogram(fill = "lightgreen", color = "lightgreen") +
+  labs(title = "Light distribution")
+
+ggplot(plants, aes(x = snow)) +
+  geom_histogram(fill = "plum", color = "plum") +
+  labs(title = "Snow distribution")
+
+ggplot(plants, aes(x = altitude, y = Carex.bigelowii)) +
+  geom_point( color = "plum") +
+  geom_smooth(method = "lm", color = "lightblue", fill = "lightblue") +
+  labs(title="Carex.bigelowii vs Altitude")
+
+ggplot(plants, aes(x = snow, y = Carex.bigelowii)) +
+  geom_point(color = "pink") +
+  geom_smooth(method="lm", color="red", fill="red") +
+  labs(title="Carex.bigelowii vs Snow")
+
+ggplot(plants, aes(x = snow, y = Carex.bigelowii)) +
+  geom_point(color = "plum") +
+  geom_smooth(method="lm", color="cornflowerblue", fill="cornflowerblue") +
+  labs(title="Carex.bigelowii vs Snow")
+
+ggplot(plants, aes(x = soil_moist, y = Carex.bigelowii)) +
+  geom_point(color = "deeppink", na.rm = TRUE) +
+  geom_smooth(method="lm", color="red", fill="pink", na.rm = TRUE) +
+  labs(title="Carex.bigelowii vs Soil Moisture")
+
+
+model <- lm(Carex.bigelowii ~ altitude + snow + soil_moist + mean_T_summer,
+                data = plants)
+summary(model)
+
