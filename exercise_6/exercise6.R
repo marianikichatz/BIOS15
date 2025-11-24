@@ -27,3 +27,25 @@ plot(x, y, las=1) # Plotting x vs. y shows a cloud of count values increasing wi
 m = glm(y~x, family="poisson")
 summary(m)
 
+plot(x, y, las=1, col="darkgrey", pch=16)
+xx = seq(min(x), max(x), 0.01) # grid of x values
+y_hat = predict(m, newdata=list(x=xx), type="response", se.fit=T) # type="response" → gives predicted mean count, not log(µ)
+# se.fit=T → also compute standard errors of predictions
+lines(xx, y_hat$fit) # y_hat$fit, Fitted Poisson mean for each xx
+# model prediction line
+# y_hat$se.fit, Standard error for each fitted value
+#lines(xx, y_hat$fit+1.96*y_hat$se.fit, lty=2)
+#lines(xx, y_hat$fit-1.96*y_hat$se.fit, lty=2)
+
+# plotting the observed data, the model’s predicted Poisson mean, 
+# and shading the 95% confidence interval around that prediction.
+polygon(c(xx, rev(xx)), # 95% confidence interval ribbon
+c(y_hat$fit+1.96*y_hat$se.fit,
+rev(y_hat$fit-1.96*y_hat$se.fit)),
+col = rgb(0,1,0,.5), border = FALSE)
+# The shaded region represents where the true mean curve is likely to lie, 
+# given uncertainty in the model estimates
+
+# Pseudo r^2
+r.squaredGLMM(m)
+1-(m$deviance/m$null.deviance)
