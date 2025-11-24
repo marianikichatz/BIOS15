@@ -48,4 +48,64 @@ col = rgb(0,1,0,.5), border = FALSE)
 
 # Pseudo r^2
 r.squaredGLMM(m)
-1-(m$deviance/m$null.deviance)
+# Delta method → an approximation method for non-linear models
+# Lognormal estimation
+# Trigamma function → a special mathematical function needed to estimate variance of the log-transformed mean
+1-(m$deviance/m$null.deviance) # deviance R², how much deviance is explained by the predictors
+#For a simple Poisson GLM with no random effects, 1 - deviance/null.deviance is usually similar to R2m from r.squaredGLMM.
+# For models with random effects or more complicated structures, r.squaredGLMM gives a more meaningful decomposition of variance.
+
+# overdispersion
+
+set.seed(1)
+x = rnorm(200, 10, 3) # input variable — think of it as “something that might influence the outcome"
+eta =-2 + 0.2*x # eta is the expected trend before we add random variation
+# y is integer count data with overdispersion, suitable for negative binomial regression
+y = floor(exp(eta + rnbinom(200, 1, mu=.8))) # mean count μ=exp(η), trend + randomness
+# rnbinom(n, size, mu) generates negative binomial random numbers
+# size = 1 → controls overdispersion (small size → more variance than Poisson)
+# mu = 0.8 → mean of the Negative Bionomial noise
+# linear predictor + NB noise
+# exp → ensures positive counts
+par(mfrow=c(1,2))
+plot(x, eta, las=1)
+plot(x, y, las=1)
+
+m = glm(y~x, family="poisson")
+summary(m)
+
+library(MASS)
+m = glm.nb(y~x) # fits the negative bionomial regression
+summary(m)
+
+xx = seq(min(x), max(x), length.out = 100)
+y_hat = predict(m, newdata = data.frame(x=xx), type="response", se.fit = TRUE)
+fit = exp(y_hat$fit)
+upper = exp(y_hat$fit + 1.96*y_hat$se.fit)
+lower = exp(y_hat$fit - 1.96*y_hat$se.fit)
+plot(x, y, col="darkgrey", pch=16, las=1, main="Negative Bionomial")
+lines(xx, fit, col="blue", lwd=2)
+polygon(c(xx, rev(xx)),
+        c(upper, rev(lower)),
+        col=rgb(0, 1, 0, 0.3), border = NA)
+
+
+set.seed(1)
+x = rnorm(200, 10, 3)
+eta = -2 + 0.2*x
+y_poisson = rpois(200, lambda = exp(eta))  # Poisson counts
+mu = exp(eta)  # expected mean counts
+sd_y = sqrt(mu)
+upper = mu + 1.96 * sd_y
+lower = mu - 1.96 * sd_y
+lower[lower < 0] = 0  # counts can't be negative
+plot(x, y_poisson, col="darkgrey", pch=16, las=1, main="Poisson Simulation")
+o = order(x)
+xs = x[o]
+mus = mu[o]
+uppers = upper[o]
+lowers = lower[o]
+lines(xs, mus)
+polygon(c(xs, rev(xs)), c(uppers, rev(lowers)), col=rgb(0,1,0,0.3), border=NA)  # 95% ribbon
+
+
