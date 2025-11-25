@@ -28,26 +28,30 @@ m_nb <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + altitude + MAT + MAP +
 summary(m_nb)
 coef(summary(m_nb))
 
-m_strong <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason + 
+m_strong <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + MAP + Pseason + 
                    lu_het, data = dat) # model accounts for varying sampling effort
 summary(m_strong)
 
 # Proportional change
 
 Δx_forest = max(dat$forest.) - min(dat$forest.)
-relative_change_forest= exp(Δx_forest*-1.342057)
+relative_change_forest= exp(Δx_forest*-0.9369490)
 percent_change_forest = (relative_change_forest -1)*100
 
 Δx_MAT = max(dat$MAT) - min(dat$MAT)
-relative_change_MAT = exp(Δx_MAT*0.010935)
+relative_change_MAT = exp(Δx_MAT*0.0031881)
 percent_change_MAT = (relative_change_MAT -1)*100
 
+Δx_MAP = max(dat$MAP) - min(dat$MAP)
+relative_change_MAP = exp(Δx_MAP*-0.0012672)
+percent_change_MAP = (relative_change_MAP -1)*100
+
 Δx_Pseason = max(dat$Pseason) - min(dat$Pseason)
-relative_change_Pseason = exp(Δx_Pseason*0.018325)
+relative_change_Pseason = exp(Δx_Pseason*0.0164724)
 percent_change_Pseason = (relative_change_Pseason -1)*100
 
 Δx_lu_het = max(dat$lu_het) - min(dat$lu_het)
-relative_change_lu_het = exp(Δx_lu_het*0.064234)
+relative_change_lu_het = exp(Δx_lu_het*-0.0319785)
 percent_change_lu_het = (relative_change_lu_het -1)*100
 
 par(mfrow = c(2,2), mar=c(4,4,2,1))
