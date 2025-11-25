@@ -54,13 +54,15 @@ percent_change_Pseason = (relative_change_Pseason -1)*100
 relative_change_lu_het = exp(Δx_lu_het*-0.0319785)
 percent_change_lu_het = (relative_change_lu_het -1)*100
 
-par(mfrow = c(2,2), mar=c(4,4,2,1))
+
+par(mfrow = c(2,3), mar=c(4,4,2,1))
 x_forest <- dat$forest.
 y <- dat$Eulaema_nigrita
 xx_forest <- seq(min(x_forest), max(x_forest), length.out = 100)
 forest_data <- data.frame(
   forest. = xx_forest,
   MAT = mean(dat$MAT),
+  MAP = mean(dat$MAP),
   Pseason = mean(dat$Pseason),
   lu_het = mean(dat$lu_het),
   effort = 1  
@@ -85,6 +87,7 @@ xx_MAT <- seq(min(x_MAT), max(x_MAT), length.out = 100)
 data_MAT <- data.frame(
   forest. = mean(dat$forest.),
   MAT = xx_MAT,
+  MAP = mean(dat$MAP),
   Pseason = mean(dat$Pseason),
   lu_het = mean(dat$lu_het),
   effort = 1
@@ -103,12 +106,38 @@ lines(xx_MAT, fit_MAT, col="red", lwd=2)
 polygon(c(xx_MAT, rev(xx_MAT)), c(upper_MAT, rev(lower_MAT)),
         col=rgb(1, 0, 0, 0.3), border=NA)
 
+x_MAP <- dat$MAP
+xx_MAP <- seq(min(x_MAP), max(x_MAP), length.out = 100)
+
+data_MAP <- data.frame(
+  forest. = mean(dat$forest.),
+  MAT = mean(dat$MAT),
+  MAP = xx_MAP,
+  Pseason = mean(dat$Pseason),
+  lu_het = mean(dat$lu_het),
+  effort = 1
+)
+
+y_hat_MAP <- predict(m_strong, newdata = data_MAP, type = "link", se.fit = TRUE)
+fit_MAP <- exp(y_hat_MAP$fit)
+upper_MAP <- exp(y_hat_MAP$fit + 1.96 * y_hat_MAP$se.fit)
+lower_MAP <- exp(y_hat_MAP$fit - 1.96 * y_hat_MAP$se.fit)
+lower_MAP[lower_MAP < 0] <- 0
+
+pmap = plot(x_MAP, y, col="darkgrey", pch=16, las=1,
+     main="Effect of MAP on Eulaema abundance",
+     xlab="Mean Annual Precipitation", ylab="Abundance")
+lines(xx_MAP, fit_MAP, col="pink", lwd=2)
+polygon(c(xx_MAP, rev(xx_MAP)), c(upper_MAP, rev(lower_MAP)),
+        col=rgb(1, 0, 0, 0.3), border=NA)
+
 x_Pseason <- dat$Pseason
 xx_Pseason <- seq(min(x_Pseason), max(x_Pseason), length.out = 100)
 
 data_Pseason <- data.frame(
   forest. = mean(dat$forest.),
   MAT = mean(dat$MAT),
+  MAP = mean(dat$MAP),
   Pseason = xx_Pseason,
   lu_het = mean(dat$lu_het),
   effort = 1
@@ -133,6 +162,7 @@ xx_lu_het <- seq(min(x_lu_het), max(x_lu_het), length.out = 100)
 data_lu_het <- data.frame(
   forest. = mean(dat$forest.),
   MAT = mean(dat$MAT),
+  MAP = mean(dat$MAP),
   Pseason = mean(dat$Pseason),
   lu_het = xx_lu_het,
   effort = 1
@@ -151,5 +181,6 @@ lines(xx_lu_het, fit_lu_het, col="plum", lwd=2)
 polygon(c(xx_lu_het, rev(xx_lu_het)), c(upper_lu_het, rev(lower_lu_het)),
         col=rgb(0.5, 0, 0.5, 0.3), border=NA)
 
+par(mfrow=c(1,1))
 
 
