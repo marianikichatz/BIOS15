@@ -7,8 +7,6 @@ library(ggplot2)
 library(broom)
 library(gt)
 
-
-
 dat = read.csv("exercise_3/butterflies.csv")
 names(dat)
 
