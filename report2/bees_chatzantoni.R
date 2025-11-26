@@ -21,7 +21,7 @@ plot_grid( h_bee, h_effort, ncol = 2,
           labels = c("A", "B"))
 
 ggplot(dat, aes(effort, Eulaema_nigrita)) +
-  geom_point() +
+  geom_point(color = "plum") +
   labs(title="Sampling effort vs abundance")
 
 dat$forest_bin <- cut(dat$forest., breaks=4)
@@ -77,185 +77,61 @@ exp(coef(m_nb))
 m_strong = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason, data = dat_std) # model accounts for varying sampling effort
 summary(m_strong)
 
-# xx_forest = seq(min(dat_std$forest.), max(dat_std$forest.), length.out = 100)
-# newdata_forest = data.frame(
-#   forest. = xx_forest,
-#   MAT     = mean(dat_std$MAT),
-#   Pseason = mean(dat_std$Pseason),
-#   effort  = 1
-# )
+sd_f = sd(dat_std$forest.)
+sd_mat = sd(dat_std$MAT)
+sd_ps = sd(dat_std$Pseason)
 
-# pred_forest = predict(m_strong, newdata = newdata_forest, type = "link", se.fit = TRUE)
-# fit_forest = exp(pred_forest$fit)
-# upper_forest = exp(pred_forest$fit + 1.96*pred_forest$se.fit)
-# lower_forest = exp(pred_forest$fit - 1.96*pred_forest$se.fit)
-# lower_forest[lower_forest < 0] = 0
+plot_effect <- function(predictor_var, color, title_suffix) {
 
-# df_forest = data.frame(
-#   forest. = xx_forest,
-#   fit = fit_forest,
-#   upper = upper_forest,
-#   lower = lower_forest
-# )
+  xx_var <- seq(min(dat[[predictor_var]]), max(dat[[predictor_var]]), length.out = 100)
 
-# p1 = ggplot() +
-#   geom_point(aes(x = dat_std$forest., y = dat_std$Eulaema_nigrita), color="darkgrey") +
-#   geom_line(data = df_forest, aes(x = forest., y = fit), color="forestgreen", size=1.2) +
-#   geom_ribbon(data = df_forest, aes(x = forest., ymin = lower, ymax = upper),
-#               fill="darkgreen", alpha=0.3) +
-#   labs(x = "Forest cover", y = "Abundance",
-#        title = "Effect of Forest Cover on Eulaema nigrita")
+  newdata <- data.frame(
+    forest. = rep(mean(dat$forest.), 100),
+    MAT     = rep(mean(dat$MAT), 100),
+    Pseason = rep(mean(dat$Pseason), 100),
+    effort  = rep(1, 100) # Standardized Effort = 1
+  )
+  
+  newdata[[predictor_var]] <- xx_var
 
+  pred <- predict(m_plot, newdata = newdata, type = "link", se.fit = TRUE)
 
-# xx_MAT <- seq(min(dat_std$MAT), max(dat_std$MAT), length.out = 100)
-# newdata_MAT <- data.frame(
-#   forest. = mean(dat_std$forest.),
-#   MAT     = xx_MAT,
-#   Pseason = mean(dat_std$Pseason),
-#   effort  = 1
-# )
+  fit   <- exp(pred$fit)
+  upper <- exp(pred$fit + 1.96*pred$se.fit)
+  lower <- exp(pred$fit - 1.96*pred$se.fit)
+  lower[lower < 0] <- 0
 
-# pred_MAT <- predict(m_strong, newdata = newdata_MAT, type = "link", se.fit = TRUE)
-# fit_MAT <- exp(pred_MAT$fit)
-# upper_MAT <- exp(pred_MAT$fit + 1.96*pred_MAT$se.fit)
-# lower_MAT <- exp(pred_MAT$fit - 1.96*pred_MAT$se.fit)
-# lower_MAT[lower_MAT < 0] <- 0
+  df_fit <- data.frame(xx = xx_var, fit = fit, upper = upper, lower = lower)
+  names(df_fit)[1] <- predictor_var
 
-# df_MAT <- data.frame(
-#   MAT = xx_MAT,
-#   fit = fit_MAT,
-#   upper = upper_MAT,
-#   lower = lower_MAT
-# )
+  p <- ggplot() +
+    geom_point(aes(x = dat[[predictor_var]], y = dat$Eulaema_nigrita), color="darkgrey") +
+    geom_line(data = df_fit, aes(x = .data[[predictor_var]], y = fit), color = color, size = 1.2) +
+    geom_ribbon(data = df_fit, aes(x = .data[[predictor_var]], ymin = lower, ymax = upper),
+                fill = color, alpha = 0.3) +
+    scale_y_continuous(trans = 'log1p', breaks = c(0, 10, 50, 100, 250, 500, 1000),
+                       labels = c(0, 10, 50, 100, 250, 500, 1000)) +
+    labs(x = title_suffix$x_label, y = "Abundance (log-transformed)",
+         title = title_suffix$title)
 
-# p2 = ggplot() +
-#   geom_point(aes(x = dat_std$MAT, y = dat_std$Eulaema_nigrita), color="darkgrey") +
-#   geom_line(data = df_MAT, aes(x = MAT, y = fit), color="red", size=1.2) +
-#   geom_ribbon(data = df_MAT, aes(x = MAT, ymin = lower, ymax = upper),
-#               fill="pink", alpha=0.3) +
-#   labs(x = "Mean Annual Temperature", y = "Abundance",
-#        title = "Effect of MAT on Eulaema nigrita")
+  return(p)
+}
+
+labels_forest <- list(x_label = "Forest cover", title = "A: Effect of Forest Cover on E. nigrita")
+p1_log <- plot_effect("forest.", "darkgreen", labels_forest)
+
+labels_MAT <- list(x_label = "Mean Annual Temperature", title = "B: Effect of MAT on E. nigrita")
+p2_log <- plot_effect("MAT", "pink", labels_MAT)
+
+labels_Pseason <- list(x_label = "Precipitation seasonality", title = "C: Effect of Pseason on E. nigrita")
+p3_log <- plot_effect("Pseason", "skyblue", labels_Pseason)
+
+plot_grid( p1_log, p2_log, p3_log, ncol = 3,
+           labels = c("A", "B", "C"))
+
+plot(residuals(m_strong) ~ fitted(m_strong))
+abline(h = 0, lty = 2, col = "red")
 
 
-# xx_Pseason <- seq(min(dat_std$Pseason), max(dat_std$Pseason), length.out = 100)
-# newdata_Pseason <- data.frame(
-#   forest. = mean(dat_std$forest.),
-#   MAT     = mean(dat_std$MAT),
-#   Pseason = xx_Pseason,
-#   effort  = 1
-# )
-
-# pred_Pseason <- predict(m_strong, newdata = newdata_Pseason, type = "link", se.fit = TRUE)
-# fit_Pseason <- exp(pred_Pseason$fit)
-# upper_Pseason <- exp(pred_Pseason$fit + 1.96*pred_Pseason$se.fit)
-# lower_Pseason <- exp(pred_Pseason$fit - 1.96*pred_Pseason$se.fit)
-# lower_Pseason[lower_Pseason < 0] <- 0
-
-# df_Pseason <- data.frame(
-#   Pseason = xx_Pseason,
-#   fit = fit_Pseason,
-#   upper = upper_Pseason,
-#   lower = lower_Pseason
-# )
-
-# p3 = ggplot() +
-#   geom_point(aes(x = dat_std$Pseason, y = dat_std$Eulaema_nigrita), color="darkgrey") +
-#   geom_line(data = df_Pseason, aes(x = Pseason, y = fit), color="skyblue", size=1.2) +
-#   geom_ribbon(data = df_Pseason, aes(x = Pseason, ymin = lower, ymax = upper),
-#               fill="blue", alpha=0.3) +
-#   labs(x = "Precipitation seasonality", y = "Abundance",
-#        title = "Effect of Pseason on Eulaema nigrita")
-
-
-# plot_grid( p1,p2,p3, ncol = 3,
-#           labels = c("A", "B", "C"))
-
-
-m_plot <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason,
-                 data = dat)
-summary(m_plot)
-
-xx_forest <- seq(min(dat$forest.), max(dat$forest.), length.out = 100)
-
-newdata_forest <- data.frame(
-  forest. = xx_forest,
-  MAT     = mean(dat$MAT),
-  Pseason = mean(dat$Pseason),
-  effort  = 1
-)
-
-pred <- predict(m_plot, newdata = newdata_forest, type = "link", se.fit = TRUE)
-
-fit   <- exp(pred$fit)
-upper <- exp(pred$fit + 1.96*pred$se.fit)
-lower <- exp(pred$fit - 1.96*pred$se.fit)
-lower[lower < 0] <- 0
-
-df <- data.frame(forest. = xx_forest, fit = fit, upper = upper, lower = lower)
-
-p1 = ggplot() +
-  geom_point(aes(x = dat$forest., y = dat$Eulaema_nigrita), color="darkgrey") +
-  geom_line(data = df, aes(x = forest., y = fit), color="darkgreen", size=1.2) +
-  geom_ribbon(data = df, aes(x = forest., ymin = lower, ymax = upper),
-              fill="lightgreen", alpha=0.3) +
-  labs(x = "Forest cover", y = "Abundance",
-       title = "Effect of Forest Cover on Eulaema nigrita")
-
-
-xx_MAT <- seq(min(dat$MAT), max(dat$MAT), length.out = 100)
-
-newdata_MAT <- data.frame(
-  forest. = mean(dat$forest.),
-  MAT     = xx_MAT,
-  Pseason = mean(dat$Pseason),
-  effort  = 1
-)
-
-pred <- predict(m_plot, newdata = newdata_MAT, type = "link", se.fit = TRUE)
-
-fit   <- exp(pred$fit)
-upper <- exp(pred$fit + 1.96*pred$se.fit)
-lower <- exp(pred$fit - 1.96*pred$se.fit)
-lower[lower < 0] <- 0
-
-df <- data.frame(MAT = xx_MAT, fit = fit, upper = upper, lower = lower)
-
-p2 = ggplot() +
-  geom_point(aes(x = dat$MAT, y = dat$Eulaema_nigrita), color="darkgrey") +
-  geom_line(data = df, aes(x = MAT, y = fit), color="red", size=1.2) +
-  geom_ribbon(data = df, aes(x = MAT, ymin = lower, ymax = upper),
-              fill="pink", alpha=0.3) +
-  labs(x = "Mean Annual Temperature", y = "Abundance",
-       title = "Effect of MAT on Eulaema nigrita")
-
-
-xx_Pseason <- seq(min(dat$Pseason), max(dat$Pseason), length.out = 100)
-
-newdata_Pseason <- data.frame(
-  forest. = mean(dat$forest.),
-  MAT     = mean(dat$MAT),
-  Pseason = xx_Pseason,
-  effort  = 1
-)
-
-pred <- predict(m_plot, newdata = newdata_Pseason, type = "link", se.fit = TRUE)
-
-fit   <- exp(pred$fit)
-upper <- exp(pred$fit + 1.96*pred$se.fit)
-lower <- exp(pred$fit - 1.96*pred$se.fit)
-lower[lower < 0] <- 0
-
-df <- data.frame(Pseason = xx_Pseason, fit = fit, upper = upper, lower = lower)
-
-p3 = ggplot() +
-  geom_point(aes(x = dat$Pseason, y = dat$Eulaema_nigrita), color="darkgrey") +
-  geom_line(data = df, aes(x = Pseason, y = fit), color="skyblue", size=1.2) +
-  geom_ribbon(data = df, aes(x = Pseason, ymin = lower, ymax = upper),
-              fill="blue", alpha=0.3) +
-  labs(x = "Precipitation seasonality", y = "Abundance",
-       title = "Effect of Pseason on Eulaema nigrita")
-
-plot_grid( p1,p2,p3, ncol = 3,
-          labels = c("A", "B", "C"))
-
-
+m_final <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason + method, data = dat)
+summary(m_final)

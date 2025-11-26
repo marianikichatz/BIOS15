@@ -1,7 +1,10 @@
+install.packages("car")
+
 library(dplyr)
 library(ggplot2)
 library(MASS)
 library(cowplot)
+library(car)
 
 dat = read.csv("exercise_6/Eulaema.csv")
 head(dat)
@@ -27,10 +30,13 @@ m_nb <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + altitude + MAT + MAP +
 
 summary(m_nb)
 coef(summary(m_nb))
+vif(m_nb)
 
 m_strong <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + MAP + Pseason + 
                    lu_het, data = dat) # model accounts for varying sampling effort
 summary(m_strong)
+
+vif(m_strong)
 
 # Proportional change
 
@@ -184,3 +190,4 @@ polygon(c(xx_lu_het, rev(xx_lu_het)), c(upper_lu_het, rev(lower_lu_het)),
 par(mfrow=c(1,1))
 
 
+boxplot(dat$Eulaema_nigrita)$out
