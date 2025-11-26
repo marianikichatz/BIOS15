@@ -7,6 +7,21 @@ library(car)
 dat = read.csv("exercise_6/Eulaema.csv")
 head(dat)
 
+ggplot(dat, aes(x = Eulaema_nigrita)) +
+  geom_histogram( fill = "pink", color = "black") +
+  labs(title = "Histogram of Eulaema_nigrita Count", x = "Count", y = "Frequency") +
+  theme_minimal()
+
+dat$rate <- dat$Eulaema_nigrita / dat$effort 
+
+ggplot(dat, aes(x = method, y = rate, fill = method)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(y = "Observed Abundance Rate (E. nigrita / effort)", 
+       x = "Sampling Method", 
+       title = "Difference in E. nigrita Rate by Sampling Method") +
+  theme_minimal()
+
 vif_model_full <- lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
 vif(vif_model_full)
 
@@ -92,3 +107,7 @@ p3 <- plot_effect("Pseason", "skyblue", labels_Pseason)
 
 plot_grid( p1, p2, p3, ncol = 3,
            labels = c("A", "B", "C"))
+
+
+
+
