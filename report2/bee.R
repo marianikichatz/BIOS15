@@ -46,20 +46,19 @@ effect_Pseason <- 100 * (exp(beta_Pseason * sd_Pseason) - 1)
 
 m_strong <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason, data = dat)
 
-plot_effect_mean_effort <- function(predictor_var, color, title_suffix, model = m_strong, data = dat) {
+plot_effect <- function(predictor_var, color, small_titles, model = m_strong, data = dat) {
   
   xx_var <- seq(min(data[[predictor_var]]), max(data[[predictor_var]]), length.out = 100)
   
-  # Δημιουργία newdata, ΧΡΗΣΙΜΟΠΟΙΩΝΤΑΣ τον μέσο όρο της προσπάθειας
-  newdata <- data.frame(
+  bees <- data.frame(
     forest. = rep(mean(data$forest.), 100),
     MAT     = rep(mean(data$MAT), 100),
     Pseason = rep(mean(data$Pseason), 100),
     effort  = rep(mean(dat$effort), 100) 
   )
-  newdata[[predictor_var]] <- xx_var
+  bees[[predictor_var]] <- xx_var
 
-  pred <- predict(model, newdata = newdata, type = "link", se.fit = TRUE)
+  pred <- predict(model, newdata = bees, type = "link", se.fit = TRUE)
   fit   <- exp(pred$fit)
   upper <- exp(pred$fit + 1.96*pred$se.fit)
   lower <- exp(pred$fit - 1.96*pred$se.fit)
@@ -68,8 +67,28 @@ plot_effect_mean_effort <- function(predictor_var, color, title_suffix, model = 
   names(df_fit)[1] <- predictor_var
 
   p <- ggplot() +
-    geom_point(aes(x = data[[predictor_var]], y = (data$Eulaema_nigrita / data$effort) * mean(dat$effort)), 
+    geom_point(aes(x = data[[predictor_var]], y = (data$Eulaema_nigrita / data$effort) * mean(data$effort)), 
                color="darkgrey", alpha=0.3) +
                 geom_line(data = df_fit, aes(x = .data[[predictor_var]], y = fit), 
                color = color, linewidth = 1.2) +
-                
+                geom_ribbon(data = df_fit, aes(x = .data[[predictor_var]], ymin = lower, ymax = upper), 
+               fill = color, alpha = 0.3) +
+                labs(x = small_titles$x_label, 
+       y = paste0("Predicted Abundance (Per ", round(mean(dat$effort), 2), " Hours of Sampling)"), 
+       title = small_titles$title) + 
+  theme_minimal()
+  
+return(p)
+}
+
+labels_forest <- list(x_label = "Forest cover", title = "Effect of Forest Cover on E. nigrita")
+p1 <- plot_effect("forest.", "darkgreen", labels_forest)
+
+labels_MAT <- list(x_label = "Mean Annual Temperature", title = "Effect of MAT on E. nigrita")
+p2 <- plot_effect("MAT", "pink", labels_MAT)
+
+labels_Pseason <- list(x_label = "Precipitation seasonality", title = "Effect of Pseason on E. nigrita")
+p3 <- plot_effect("Pseason", "skyblue", labels_Pseason)
+
+plot_grid( p1, p2, p3, ncol = 3,
+           labels = c("A", "B", "C"))
