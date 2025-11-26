@@ -46,3 +46,30 @@ effect_Pseason <- 100 * (exp(beta_Pseason * sd_Pseason) - 1)
 
 m_strong <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason, data = dat)
 
+plot_effect_mean_effort <- function(predictor_var, color, title_suffix, model = m_strong, data = dat) {
+  
+  xx_var <- seq(min(data[[predictor_var]]), max(data[[predictor_var]]), length.out = 100)
+  
+  # Δημιουργία newdata, ΧΡΗΣΙΜΟΠΟΙΩΝΤΑΣ τον μέσο όρο της προσπάθειας
+  newdata <- data.frame(
+    forest. = rep(mean(data$forest.), 100),
+    MAT     = rep(mean(data$MAT), 100),
+    Pseason = rep(mean(data$Pseason), 100),
+    effort  = rep(mean(dat$effort), 100) 
+  )
+  newdata[[predictor_var]] <- xx_var
+
+  pred <- predict(model, newdata = newdata, type = "link", se.fit = TRUE)
+  fit   <- exp(pred$fit)
+  upper <- exp(pred$fit + 1.96*pred$se.fit)
+  lower <- exp(pred$fit - 1.96*pred$se.fit)
+
+  df_fit <- data.frame(xx = xx_var, fit = fit, upper = upper, lower = lower)
+  names(df_fit)[1] <- predictor_var
+
+  p <- ggplot() +
+    geom_point(aes(x = data[[predictor_var]], y = (data$Eulaema_nigrita / data$effort) * mean(dat$effort)), 
+               color="darkgrey", alpha=0.3) +
+                geom_line(data = df_fit, aes(x = .data[[predictor_var]], y = fit), 
+               color = color, linewidth = 1.2) +
+                
