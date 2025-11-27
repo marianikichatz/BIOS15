@@ -12,16 +12,6 @@ ggplot(dat, aes(x = Eulaema_nigrita)) +
   labs(title = "Histogram of Eulaema_nigrita Count", x = "Count", y = "Frequency") +
   theme_minimal()
 
-dat$rate = dat$Eulaema_nigrita / dat$effort 
-
-ggplot(dat, aes(x = method, y = rate, fill = method)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette = "Set3") +
-  labs(y = "Observed Abundance Rate (E. nigrita / effort)", 
-       x = "Sampling Method", 
-       title = "Difference in E. nigrita Rate by Sampling Method") +
-  theme_minimal()
-
 vif_model_full = lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
 vif(vif_model_full)
 
@@ -39,6 +29,16 @@ summary(m)
 
 m_full = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason + lu_het + method, data = dat)
 summary(m_full)
+
+dat$rate = dat$Eulaema_nigrita / dat$effort 
+
+ggplot(dat, aes(x = method, y = rate, fill = method)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(y = "Observed Abundance Rate (E. nigrita / effort)", 
+       x = "Sampling Method", 
+       title = "Difference in E. nigrita Rate by Sampling Method") +
+  theme_minimal()
 
 beta_lu_het = 0.031036
 sd_lu_het = sd(dat$lu_het)
