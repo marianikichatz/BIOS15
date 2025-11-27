@@ -9,7 +9,7 @@ head(dat)
 
 ggplot(dat, aes(x = Eulaema_nigrita)) +
   geom_histogram( fill = "plum", color = "black") +
-  labs(title = "Histogram of Eulaema_nigrita Count", x = "Count", y = "Frequency") +
+  labs(title = "Histogram of Eulaema nigrita Count", x = "Count", y = "Frequency") +
   theme_minimal()
 
 vif_model_full = lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
@@ -45,7 +45,7 @@ sd_lu_het = sd(dat$lu_het)
 effect_lu_het_sd = 100 * (exp(beta_lu_het * sd_lu_het) - 1)
 
 beta_method_traps = 0.167504
-effect_method_traps = 100 * (exp(beta_method_traps) - 1) # methods are categorical
+effect_method_traps = 100 * (exp(beta_method_traps) - 1) 
 
 beta_forest = -1.250720
 sd_forest = sd(dat$forest.)
