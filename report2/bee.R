@@ -7,10 +7,20 @@ library(car)
 dat = read.csv("exercise_6/Eulaema.csv")
 head(dat)
 
-ggplot(dat, aes(x = Eulaema_nigrita)) +
-  geom_histogram( fill = "plum", color = "black") +
-  labs(title = "Histogram of Eulaema nigrita Count", x = "Count", y = "Frequency") +
+summary(dat$Eulaema_nigrita)
+h_bee = ggplot(dat, aes(x = Eulaema_nigrita)) +
+  geom_histogram(fill = "pink", color = "black") +
+  labs(title = "Bee abundance", x = "Count", y = "Frequency") +
   theme_minimal()
+
+summary(dat$effort)
+h_effort = ggplot(dat, aes(x = effort)) +
+  geom_histogram(fill = "plum", color = "black") +
+  labs(title = "Sampling effort (log hours)", x = "Log hours", y = "Frequency") +
+  theme_minimal()
+
+plot_grid( h_bee, h_effort, ncol = 2,
+          labels = c("A", "B")) 
 
 vif_model_full = lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
 vif(vif_model_full)
