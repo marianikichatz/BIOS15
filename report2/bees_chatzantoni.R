@@ -10,128 +10,117 @@ head(dat)
 summary(dat$Eulaema_nigrita)
 h_bee = ggplot(dat, aes(x = Eulaema_nigrita)) +
   geom_histogram(fill = "pink", color = "black") +
-  labs(title = "Bee abundance", x = "Count", y = "Frequency")
+  labs(title = "Bee abundance", x = "Count", y = "Frequency") +
+  theme_minimal()
 
 summary(dat$effort)
 h_effort = ggplot(dat, aes(x = effort)) +
   geom_histogram(fill = "plum", color = "black") +
-  labs(title = "Sampling effort (log hours)", x = "Log hours", y = "Frequency")
+  labs(title = "Sampling effort (log hours)", x = "Log hours", y = "Frequency") +
+  theme_minimal()
 
 plot_grid( h_bee, h_effort, ncol = 2,
-          labels = c("A", "B"))
+          labels = c("A", "B")) 
 
-ggplot(dat, aes(effort, Eulaema_nigrita)) +
-  geom_point(color = "plum") +
-  labs(title="Sampling effort vs abundance")
+vif_model_full = lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
+vif(vif_model_full)
 
-dat$forest_bin <- cut(dat$forest., breaks=4)
+vif_model_step1 = lm(Eulaema_nigrita ~ MAT + MAP + Tseason + Pseason + forest. + lu_het, data = dat)
+vif(vif_model_step1)
 
-b1 <- ggplot(dat, aes(x = forest_bin, y = Eulaema_nigrita)) +
-  geom_boxplot(fill="forestgreen", color="black") +
-  labs(title="Abundance across Forest cover categories",
-       x="Forest cover (binned)", y="Bee count")
+vif_model_step2 = lm(Eulaema_nigrita ~ MAT + MAP + Pseason + forest. + lu_het, data = dat)
+vif(vif_model_step2)
 
+vif_model_step3 = lm(Eulaema_nigrita ~ MAT + Pseason + forest. + lu_het, data = dat)
+vif(vif_model_step3)
 
-dat$MAT_bin = cut(dat$MAT, breaks=4)
-
-b2 = ggplot(dat, aes(x = MAT_bin, y = Eulaema_nigrita)) +
-  geom_boxplot(fill="plum", color = "black") +
-  labs(title="Abundance across MAT categories",
-       x = "MAT (binned)", y = "Bee count")
-
-dat$Pseason_bin <- cut(dat$Pseason, breaks=4)
-
-b3 <- ggplot(dat, aes(x = Pseason_bin, y = Eulaema_nigrita)) +
-  geom_boxplot(fill="skyblue", color="black") +
-  labs(title="Abundance across Pseason categories",
-       x="Precipitation seasonality (binned)", y="Bee count")
-
-plot_grid( b1,b2,b3, ncol = 3,
-          labels = c("A", "B", "C"))
-
-m_full = lm(Eulaema_nigrita ~ altitude + MAT + MAP + Tseason + Pseason +
-               forest. + lu_het + effort,
-             data = dat)
-
-vif(m_full)
-
-m = glm(Eulaema_nigrita ~ effort + altitude + MAT, "poisson", data=dat)
+m = glm(Eulaema_nigrita ~ effort + forest. + MAT + Pseason + lu_het + method, "poisson", data = dat)
 summary(m)
 
-dat_std = dat
-dat$altitude = as.numeric(dat$altitude)
-dat$MAT = as.numeric(dat$MAT)
-dat$MAP = as.numeric(dat$MAP)
-dat$Tseason = as.numeric(dat$Tseason)
-dat$Pseason = as.numeric(dat$Pseason)
-dat$forest. = as.numeric(dat$forest.)
-dat$lu_het = as.numeric(dat$lu_het)
+m_full = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason + lu_het + method, data = dat)
+summary(m_full)
 
-m_nb = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + altitude + MAT + MAP + 
-                Tseason + Pseason + forest. + lu_het, data = dat_std) # model accounts for varying sampling effort
+dat$rate = dat$Eulaema_nigrita / dat$effort 
 
-summary(m_nb)
-vif(m_nb)
-exp(coef(m_nb))
+ggplot(dat, aes(x = method, y = rate, fill = method)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(y = "Observed Abundance Rate (E. nigrita / effort)", 
+       x = "Sampling Method", 
+       title = "Difference in E. nigrita Rate by Sampling Method") +
+  theme_minimal()
 
-m_strong = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason, data = dat_std) # model accounts for varying sampling effort
+beta_lu_het = 0.031036
+sd_lu_het = sd(dat$lu_het)
+effect_lu_het_sd = 100 * (exp(beta_lu_het * sd_lu_het) - 1)
+
+beta_method_traps = 0.167504
+effect_method_traps = 100 * (exp(beta_method_traps) - 1) 
+
+beta_forest = -1.250720
+sd_forest = sd(dat$forest.)
+effect_forest = 100 * (exp(beta_forest * sd_forest) - 1)
+
+beta_MAT = 0.010593
+sd_MAT = sd(dat$MAT)
+effect_MAT = 100 * (exp(beta_MAT * sd_MAT) - 1)
+
+beta_Pseason = 0.018179
+sd_Pseason = sd(dat$Pseason)
+effect_Pseason = 100 * (exp(beta_Pseason * sd_Pseason) - 1)
+
+m_strong = glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason, data = dat)
 summary(m_strong)
 
-sd_f = sd(dat_std$forest.)
-sd_mat = sd(dat_std$MAT)
-sd_ps = sd(dat_std$Pseason)
-
-plot_effect <- function(predictor_var, color, title_suffix) {
-
-  xx_var <- seq(min(dat[[predictor_var]]), max(dat[[predictor_var]]), length.out = 100)
-
-  newdata <- data.frame(
-    forest. = rep(mean(dat$forest.), 100),
-    MAT     = rep(mean(dat$MAT), 100),
-    Pseason = rep(mean(dat$Pseason), 100),
-    effort  = rep(1, 100) # Standardized Effort = 1
-  )
+plot_effect = function(predictor_var, color, small_titles, model = m_strong, data = dat) {
   
-  newdata[[predictor_var]] <- xx_var
+  xx_var = seq(min(data[[predictor_var]]), max(data[[predictor_var]]), length.out = 100)
+  
+  bees = data.frame(
+    forest. = rep(mean(data$forest.), 100),
+    MAT     = rep(mean(data$MAT), 100),
+    Pseason = rep(mean(data$Pseason), 100),
+    effort  = rep(mean(dat$effort), 100) 
+  )
+  bees[[predictor_var]] = xx_var
 
-  pred <- predict(m_plot, newdata = newdata, type = "link", se.fit = TRUE)
+  pred = predict(model, newdata = bees, type = "link", se.fit = TRUE)
+  fit   = exp(pred$fit)
+  upper = exp(pred$fit + 1.96*pred$se.fit)
+  lower = exp(pred$fit - 1.96*pred$se.fit)
 
-  fit   <- exp(pred$fit)
-  upper <- exp(pred$fit + 1.96*pred$se.fit)
-  lower <- exp(pred$fit - 1.96*pred$se.fit)
-  lower[lower < 0] <- 0
+  df_fit = data.frame(xx = xx_var, fit = fit, upper = upper, lower = lower)
+  names(df_fit)[1] = predictor_var
 
-  df_fit <- data.frame(xx = xx_var, fit = fit, upper = upper, lower = lower)
-  names(df_fit)[1] <- predictor_var
-
-  p <- ggplot() +
-    geom_point(aes(x = dat[[predictor_var]], y = dat$Eulaema_nigrita), color="darkgrey") +
-    geom_line(data = df_fit, aes(x = .data[[predictor_var]], y = fit), color = color, size = 1.2) +
-    geom_ribbon(data = df_fit, aes(x = .data[[predictor_var]], ymin = lower, ymax = upper),
-                fill = color, alpha = 0.3) +
-    scale_y_continuous(trans = 'log1p', breaks = c(0, 10, 50, 100, 250, 500, 1000),
-                       labels = c(0, 10, 50, 100, 250, 500, 1000)) +
-    labs(x = title_suffix$x_label, y = "Abundance (log-transformed)",
-         title = title_suffix$title)
-
-  return(p)
+  p = ggplot() +
+    geom_point(aes(x = data[[predictor_var]], y = (data$Eulaema_nigrita / data$effort) * mean(data$effort)), 
+               color="darkgrey", alpha=0.3) +
+                geom_line(data = df_fit, aes(x = .data[[predictor_var]], y = fit), 
+               color = color, linewidth = 1.2) +
+                geom_ribbon(data = df_fit, aes(x = .data[[predictor_var]], ymin = lower, ymax = upper), 
+               fill = color, alpha = 0.3) +
+                labs(x = small_titles$x_label, 
+       y = paste0("Predicted Abundance (Per ", round(mean(dat$effort), 2), " Hours of Sampling)"), 
+       title = small_titles$title) + 
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 14, face = "bold"),  
+        axis.title.y = element_text(size = 14, face = "bold"))
+  
+return(p)
 }
 
-labels_forest <- list(x_label = "Forest cover", title = "A: Effect of Forest Cover on E. nigrita")
-p1_log <- plot_effect("forest.", "darkgreen", labels_forest)
+labels_forest = list(x_label = "Forest cover", title = "Effect of Forest Cover on E. nigrita")
+p1 = plot_effect("forest.", "darkgreen", labels_forest)
 
-labels_MAT <- list(x_label = "Mean Annual Temperature", title = "B: Effect of MAT on E. nigrita")
-p2_log <- plot_effect("MAT", "pink", labels_MAT)
+labels_MAT = list(x_label = "Mean Annual Temperature", title = "Effect of MAT on E. nigrita")
+p2 = plot_effect("MAT", "pink", labels_MAT)
 
-labels_Pseason <- list(x_label = "Precipitation seasonality", title = "C: Effect of Pseason on E. nigrita")
-p3_log <- plot_effect("Pseason", "skyblue", labels_Pseason)
+labels_Pseason = list(x_label = "Precipitation seasonality", title = "Effect of Pseason on E. nigrita")
+p3 = plot_effect("Pseason", "skyblue", labels_Pseason)
 
-plot_grid( p1_log, p2_log, p3_log, ncol = 3,
+plot_grid( p1, p2, p3, ncol = 3,
            labels = c("A", "B", "C"))
 
-plot(residuals(m_strong) ~ fitted(m_strong))
-abline(h = 0, lty = 2, col = "red")
 
 
-m_final <- glm.nb(Eulaema_nigrita ~ offset(log(effort)) + forest. + MAT + Pseason + method, data = dat)
-summary(m_final)
+
