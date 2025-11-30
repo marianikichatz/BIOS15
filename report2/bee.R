@@ -102,7 +102,9 @@ plot_effect = function(predictor_var, color, small_titles, model = m_strong, dat
                 labs(x = small_titles$x_label, 
        y = paste0("Predicted Abundance (Per ", round(mean(dat$effort), 2), " Hours of Sampling)"), 
        title = small_titles$title) + 
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 14, face = "bold"),  
+        axis.title.y = element_text(size = 14, face = "bold"))
   
 return(p)
 }
