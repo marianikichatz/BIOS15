@@ -9,13 +9,14 @@ C
 
 # EXERCISE: Translate the covariance matrix into a correlation matrix
 
-R <- matrix(0, nrow=3, ncol=3)
+R = matrix(0, nrow=3, ncol=3)
 
 for(i in 1:3){
   for(j in 1:3){
-    R[i,j] <- C[i,j] / ( sqrt(C[i,i]) * sqrt(C[j,j]) )
+    R[i,j] = C[i,j] / ( sqrt(C[i,i]) * sqrt(C[j,j]) )
   }
 }
+
 R
 
 install.packages("ellipse")
@@ -56,3 +57,29 @@ means[1]+eigen(C)$vectors[1,2], # τώρα χρησιμοποιούμε τον �
 means[2]+eigen(C)$vectors[2,2],
 code=2, length=0.1, lwd=2)
 
+# Exercise: Compute the proportion of variance associated with each eigenvector of C
+
+λ = eigen(C)$values
+Σλ = sum(λ)
+proportion_of_variance = λ/Σλ
+
+# Exercise: Confirm that the eigenvectors are of unit length (length = 1) and that the angle between them is 90 degrees
+
+eig = eigen(C)
+v1 = eig$vectors[,1]   # 1ος eigenvector
+v2 = eig$vectors[,2]   # 2ος eigenvector
+v3 = eig$vectors[,3]   # 3ος eigenvector
+
+sqrt(sum(v1^2))
+sqrt(sum(v2^2))
+sqrt(sum(v3^2))
+
+angle_12 = acos(sum(v1 * v2)) * 180/pi
+angle_13 = acos(sum(v1 * v3)) * 180/pi
+angle_23 = acos(sum(v2 * v3)) * 180/pi
+
+# EExercise: Reconstruct the matrix C from the eigenvalues and eigenvectors. Hint: To get the inverse of a matrix, we can use the solve function
+
+Q = eig$vectors
+Λ = diag(eig$values)
+C_recon =  Q %*% Λ %*% solve(Q)
