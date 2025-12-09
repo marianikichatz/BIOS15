@@ -79,7 +79,10 @@ angle_13 = acos(sum(v1 * v3)) * 180/pi
 angle_23 = acos(sum(v2 * v3)) * 180/pi
 
 # EExercise: Reconstruct the matrix C from the eigenvalues and eigenvectors. Hint: To get the inverse of a matrix, we can use the solve function
+# Οι ανακατασκευασμένες μητρές είναι ίδιες γιατί η eigendecomposition είναι απλώς μια άλλη “παράσταση” της ίδιας μήτρας
 
 Q = eig$vectors
 Λ = diag(eig$values)
 C_recon =  Q %*% Λ %*% solve(Q)
+
+
