@@ -1,5 +1,7 @@
 install.packages("glmmTMB")
 library(glmmTMB)
+library(car)
+library(tidyverse)
 
 data = read.csv(file = "midterm/exam2023_data-2.csv")
 
@@ -14,6 +16,8 @@ data$Season = factor(data$Season)
 data$Property = factor(data$Property) # random effect
 data$Aspect = factor(data$Aspect)
 data$Landscape.position = factor(data$Landscape.position)
+
+# diff types of plants
 
 data$grass_cover = 
   data$ExoticAnnualGrass_cover +
@@ -40,6 +44,7 @@ vif_cover = lm(Eucalyptus_seedlings ~ grass_cover + graminoid_cover + herb_cover
 
 summary(m_cover1)
 
+# diff life circles
 
 data$annual_cover = data$ExoticAnnualGrass_cover + data$ExoticAnnualHerb_cover
 
@@ -59,6 +64,7 @@ vif_life = lm(Eucalyptus_seedlings ~ annual_cover + perennial_cover + Euc_canopy
 
 summary(m_life1)
 
+# diff origin
 
 data$native_cover = data$NativePerennialGrass_cover +
   data$NativePerennialGraminoid_cover +
@@ -76,7 +82,11 @@ m_where1 = glmmTMB(Eucalyptus_seedlings ~ native_cover + exotic_cover + Euc_cano
 m_where2 = glmmTMB(Eucalyptus_seedlings ~ native_cover + exotic_cover + Euc_canopy_cover + (1 | Property),family = nbinom2, data = data)
 AIC(m_where1, m_where2)
 
+vif_where = lm(Eucalyptus_seedlings ~ native_cover + exotic_cover + Euc_canopy_cover, data = data)
+
 summary(m_where1)
+
+# diff origin and type
 
 data$native_grass = data$NativePerennialGrass_cover + data$NativePerennialGraminoid_cover
 data$native_herb  = data$NativePerennialHerb_cover
@@ -93,8 +103,12 @@ m_boss2 = glmmTMB(Eucalyptus_seedlings ~ native_grass + native_herb + native_fer
   exotic_grass + exotic_herb + exotic_shrub + Euc_canopy_cover + (1 | Property), family = nbinom2, data = data)
 AIC(m_boss1,m_boss2)
 
+vif_boss = lm(Eucalyptus_seedlings ~ native_grass + native_herb + native_fern + native_shrub +
+  exotic_grass + exotic_herb + exotic_shrub + Euc_canopy_cover, data = data)
+
 summary(m_boss1)
 
+# competition between seedlings and cover from all the plants
 
 data$competition = data$grass_cover + data$graminoid_cover + data$herb_cover + data$fern_cover + data$shrub_cover
 
@@ -104,6 +118,27 @@ AIC(m_competion1,m_competion2)
 
 summary(m_competion1)
 
-m_full = glmmTMB(Eucalyptus_seedlings ~ grass_cover + graminoid_cover + herb_cover + fern_cover + 
-  shrub_cover + competition + Euc_canopy_cover + (1 | Property), family = nbinom1, data = data)
-summary(m_full)
+# check for vif
+
+vif(vif_cover)
+vif(vif_life)
+vif(vif_where)
+vif(vif_boss)
+
+# Plots
+
+data_long_cover <- data %>%
+  pivot_longer(cols = c(grass_cover, herb_cover, fern_cover, shrub_cover), names_to = "plant_type", values_to = "cover")
+
+ggplot(data_long_cover, aes(x = cover, 
+                      y = Eucalyptus_seedlings, 
+                      color = plant_type)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "loess", se = FALSE, size = 1.1) +
+  labs(
+    x = "Plant cover (%)",
+    y = "Eucalyptus seedlings abundance",
+    ccolor = "Plant type",
+    title = "Relationship between plant cover and Eucalyptus seedlings"
+  ) +
+  theme_minimal(base_size = 14)
