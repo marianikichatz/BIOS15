@@ -5,6 +5,7 @@ library(performance)
 library(glmmTMB)
 library(tidyverse)
 library(ggeffects)
+library(cowplot)
 
 data = read.csv(file = "midterm/exam2023_data-2.csv")
 data = na.omit(data)
@@ -66,7 +67,8 @@ data$exotic_cover = data$ExoticAnnualGrass_cover +
 
 # diff origin and type
 
-data$native_grass = data$NativePerennialGrass_cover + data$NativePerennialGraminoid_cover
+data$native_grass = data$NativePerennialGrass_cover 
+data$native_graminoid = data$NativePerennialGraminoid_cover
 data$native_herb  = data$NativePerennialHerb_cover
 data$native_fern  = data$NativePerennialFern_cover
 data$native_shrub = data$NativeShrub_cover
@@ -122,9 +124,9 @@ summary(m_where1)
 
 # model boss 
 m_boss1 = glmmTMB(Eucalyptus_seedlings ~ native_grass + native_herb + native_fern + native_shrub +
-  exotic_grass + exotic_herb + exotic_shrub + Euc_canopy_cover + (1 | Property), family = nbinom1, data = data_scaled)
+  exotic_grass + exotic_herb + exotic_shrub + native_graminoid + Euc_canopy_cover + (1 | Property), family = nbinom1, data = data_scaled)
 m_boss2 = glmmTMB(Eucalyptus_seedlings ~ native_grass + native_herb + native_fern + native_shrub +
-  exotic_grass + exotic_herb + exotic_shrub + Euc_canopy_cover + (1 | Property), family = nbinom2, data = data_scaled)
+  exotic_grass + exotic_herb + exotic_shrub + native_graminoid + Euc_canopy_cover + (1 | Property), family = nbinom2, data = data_scaled)
 AIC(m_boss1,m_boss2)
 
 vif_boss = check_collinearity(m_boss1)
@@ -149,7 +151,7 @@ vif_boss
 data_long_cover = data %>%
   pivot_longer(cols = c(grass_cover, herb_cover, fern_cover, shrub_cover,graminoid_cover ), names_to = "plant_type", values_to = "cover")
 
-ggplot(data_long_cover, aes(x = plant_type, y = cover, fill = plant_type)) +
+box_cover = ggplot(data_long_cover, aes(x = plant_type, y = cover, fill = plant_type)) +
   geom_boxplot(alpha = 0.7) +       
   xlab("Plant type") +
   ylab("Cover") +
@@ -158,7 +160,7 @@ ggplot(data_long_cover, aes(x = plant_type, y = cover, fill = plant_type)) +
    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-plot_prediction = function(model, predictor_var, data_scaled, title_text, plot_color, y_limit = NULL) {
+plot_prediction = function(model, predictor_var, data_scaled, title_text, plot_color, y_limit = NULL, x_limit = NULL) {
   x_range = seq(min(data_scaled[[predictor_var]]),
                 max(data_scaled[[predictor_var]]),
                 length.out = 100)
@@ -189,23 +191,38 @@ plot_prediction = function(model, predictor_var, data_scaled, title_text, plot_c
     theme_bw() +
     labs(title = title_text,
          x = paste0(stringr::str_to_title(gsub("_", " ", predictor_var)), " (scaled)"),
-         y = "Predicted Eucalyptus Seedlings")
+         y = "Eucalyptus Seedlings (count)")
 
 if (!is.null(y_limit)) {
     p = p + coord_cartesian(ylim = c(0, y_limit))
   }
-  
+
   print(p)
 
 }
 
-plot_prediction(m_cover1, "herb_cover", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Herb Cover (Controlling for other Cover Types)", 
-                plot_color = "pink", y_limit = 100)
+p_herb = plot_prediction(m_cover1, "herb_cover", data_scaled , 
+                "Eucalyptus Seedlings vs Herb Cover \n (Controlling for other Cover Types)", 
+                plot_color = "pink", y_limit = 3)
 
-plot_prediction(m_cover1, "grass_cover", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Grass Cover (Controlling for other Cover Types)", 
-                plot_color = "darkgreen", y_limit = 100)
+p_grass = plot_prediction(m_cover1, "grass_cover", data_scaled, 
+                " Eucalyptus Seedlings vs Grass Cover \n (Controlling for other Cover Types)", 
+                plot_color = "darkgreen", y_limit = 3)
+
+p_granoid = plot_prediction(m_cover1, "graminoid_cover", data_scaled, 
+                " Eucalyptus Seedlings vs Graminoid \n Cover (Controlling for other Cover Types)", 
+                plot_color = "seagreen4", y_limit = 3)
+
+p_shrub = plot_prediction(m_cover1, "shrub_cover", data_scaled, 
+                " Eucalyptus Seedlings vs Shrub Cover \n (Controlling for other Cover Types)", 
+                plot_color = "mediumpurple4", y_limit = 3)
+
+p_fern = plot_prediction(m_cover1, "fern_cover", data_scaled, 
+                " Eucalyptus Seedlings vs Fern Cover \n (Controlling for other Cover Types)", 
+                plot_color = "firebrick", y_limit = 3)
+
+plot_grid( box_cover, p_grass, p_granoid, p_herb, p_fern, p_shrub, ncol = 3,
+           labels = c("A", "B", "C", "D", "E", "F"))
 
 data_long_life = data %>%
   pivot_longer(cols = c("annual_cover", "perennial_cover"), names_to = "Life_Duration", values_to = "cover")
@@ -219,12 +236,12 @@ ggplot(data_long_life, aes(x = Life_Duration, y = cover, fill = Life_Duration)) 
    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 plot_prediction(m_life1, "annual_cover", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Annual Cover (Controlling for Perennial Cover)", 
-                plot_color = "plum", y_limit = 100)
+                " Eucalyptus Seedlings vs Annual Cover (Controlling for Perennial Cover)", 
+                plot_color = "plum", y_limit = 3)
 
 plot_prediction(m_life1, "perennial_cover", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Perennial Cover (Controlling for Annual Cover)", 
-                plot_color = "lightblue", y_limit = 100)
+                " Eucalyptus Seedlings vs Perennial Cover (Controlling for Annual Cover)", 
+                plot_color = "lightblue", y_limit = 3)
 
 data_long_where = data %>%
   pivot_longer(cols = c("native_cover", "exotic_cover"), names_to = "origin", values_to = "cover")
@@ -238,18 +255,18 @@ ggplot(data_long_where, aes(x = origin , y = cover, fill = origin)) +
    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 plot_prediction(m_where1, "exotic_cover", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Exotic Cover (Controlling for Native Cover)", 
-                plot_color = "orange", y_limit = 100)
+                " Eucalyptus Seedlings vs Exotic Cover (Controlling for Native Cover)", 
+                plot_color = "orange", y_limit = 3)
 
 plot_prediction(m_where1, "native_cover", data_scaled, 
                 "Predicted Eucalyptus Seedlings vs Native Cover (Controlling for Exotic Cover)", 
-                plot_color = "royalblue3", y_limit = 100)
+                plot_color = "royalblue3", y_limit = 3)
 
 data_long_boss = data %>%
   pivot_longer(cols = c("native_grass",  "native_herb",  "native_fern",  "native_shrub",
   "exotic_grass",  "exotic_herb", "exotic_shrub"), names_to = "origin_and_type", values_to = "cover")
 
-ggplot(data_long_boss, aes(x = origin_and_type , y = cover, fill = origin_and_type)) +
+boss_box = ggplot(data_long_boss, aes(x = origin_and_type , y = cover, fill = origin_and_type)) +
   geom_boxplot(alpha = 0.7) +       
   xlab("Origin and Plant Type") +
   ylab("Cover") +
@@ -257,12 +274,43 @@ ggplot(data_long_boss, aes(x = origin_and_type , y = cover, fill = origin_and_ty
   scale_fill_brewer(palette = "Set3") +
    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-plot_prediction(m_boss1, "native_herb", data_scaled, 
-                "Predicted Eucalyptus Seedlings vs Native Herb Cover (Controlling for other Cover Types)", 
-                plot_color = "deeppink4", y_limit = 250)
+p_native_herb = plot_prediction(m_boss1, "native_herb", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nNative Herb Cover \n(Controlling for other Cover Types)", 
+                plot_color = "pink", y_limit = 3)
+
+p_exotic_herb = plot_prediction(m_boss1, "exotic_herb", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nExotic Herb Cover \n(Controlling for other Cover Types)", 
+                plot_color = "deeppink4", y_limit = 150)
+
+p_native_grass = plot_prediction(m_boss1, "native_grass", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nNative Grass Cover \n(Controlling for other Cover Types)", 
+                plot_color = "lightgreen", y_limit = 3)
+
+p_exotic_grass = plot_prediction(m_boss1, "exotic_grass", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nExotic Grass Cover \n(Controlling for other Cover Types)", 
+                plot_color = "darkgreen", y_limit = 3)
+
+p_native_graminoid = plot_prediction(m_boss1, "native_graminoid", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nNative Graminoid Cover\n(Controlling for other Cover Types)", 
+                plot_color = "seagreen4", y_limit = 3)
+
+p_native_fern = plot_prediction(m_boss1, "native_fern", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nNative Fern Cover \n(Controlling for other Cover Types)", 
+                plot_color = "firebrick", y_limit = 3)
+
+p_native_shrub = plot_prediction(m_boss1, "native_shrub", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nNative Shrub Cover \n(Controlling for other Cover Types)", 
+                plot_color = "mediumpurple1", y_limit = 3)
+
+p_exotic_shrub = plot_prediction(m_boss1, "exotic_shrub", data_scaled, 
+                "Predicted Eucalyptus Seedlings vs \nExotic Shrub Cover \n(Controlling for other Cover Types)", 
+                plot_color = "mediumpurple4", y_limit = 3)
+
+plot_grid( boss_box, p_native_grass,p_exotic_grass,  p_native_graminoid, p_native_herb,p_exotic_herb, p_native_fern, p_native_shrub,p_exotic_shrub, ncol = 3,
+           labels = c("A", "B", "C", "D", "E", "F","G","H","I"))
 
 plot_prediction(m_competition1, "competition", data_scaled, 
                 "Predicted Eucalyptus Seedlings vs Competition Cover", 
-                plot_color = "slateblue1", y_limit = 100)
+                plot_color = "slateblue1", y_limit = 3)
 
 
