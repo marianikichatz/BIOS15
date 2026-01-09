@@ -78,6 +78,7 @@ m_inter <- lmer(log_fitness ~ Pop * openflws_sc + Pop * height_sc + Pop * flwsiz
 summary(m_inter) 
 anova(m_final, m_inter) # anova comparison
 model.sel(m_final, m_inter) # AICc comparison
+model.sel(m_final, m_inter,m_attr)
 
 # check for multicollinearity
 vif(m_global)
@@ -184,3 +185,37 @@ ggplot(pred_pop, aes(x = x, y = predicted, color = x)) +
        y = "Predicted log(Fitness)") +
   theme(text = element_text(size = 14), legend.position = "none") +
   scale_color_brewer(palette = "PuRd")
+
+# for tables
+
+print(summary(m_final)$coefficients) # coefficients
+
+betas_f <- fixef(m_final) # fixed effects coefficients
+
+percent_change_f <- (exp(betas_f) - 1) * 100 # percent change in fitness
+
+# results table
+results_table_f <- data.frame(
+  Predictor = names(betas_f),
+  Estimate = round(betas_f, 4),           
+  Percent_Change = round(percent_change_f, 2) 
+)
+
+print(results_table_f)
+
+
+print(summary(m_inter)$coefficients) # coefficients
+
+betas_int <- fixef(m_inter) # fixed effects coefficients
+
+percent_change_int <- (exp(betas_int) - 1) * 100 # percent change in fitness
+
+# results table
+results_table_int <- data.frame(
+  Predictor = names(betas_int),
+  Estimate = round(betas_int, 4),           
+  Percent_Change = round(percent_change_int, 2) 
+)
+
+print(results_table_int)
+
