@@ -69,11 +69,24 @@ summary(m_final)
 model.sel(m_final, m_global, m_morph, m_attr) # AICc comparison
 anova(m_final, m_global, m_morph, m_attr) # anova comparison
 
+# interaction model
+
+# fit the interaction model
+m_inter <- lmer(log_fitness ~ Pop * openflws_sc + Pop * height_sc + Pop * flwsize_sc + (1|Block), 
+                data = data_scaled)
+
+summary(m_inter) 
+anova(m_final, m_inter) # anova comparison
+model.sel(m_final, m_inter) # AICc comparison
+
 # check for multicollinearity
 vif(m_global)
 vif(m_morph)
 vif(m_attr)
 vif(m_final) 
+
+ # r2 for final model
+r.squaredGLMM(m_final)
 
 # Plots
 
@@ -120,7 +133,7 @@ bars_attr <- ggplot(plot_data_attr, aes(x = Factor, y = Power, fill = Factor)) +
        x = "Predictor", 
        y = "Effect Size (Estimate)") +
   theme(text = element_text(size = 14)) +
-  scale_fill_brewer(palette = "Pastel2")
+  scale_fill_brewer(palette = "PuRd")
 
 plot_grid( bars_attr ,plot_attr_openflws, plot_attr_tscent, plot_attr_FlwDate, ncol = 2,
            labels = c("A", "B", "C", "D"))
@@ -147,7 +160,7 @@ plot_data_final <- data.frame(
              fixef(m_final)["height_sc"], 
              fixef(m_final)["flwsize_sc"]))
 
-bars_final <- ggplot(plot_data, aes(x = Factor, y = Power, fill = Factor)) + 
+bars_final <- ggplot(plot_data_final, aes(x = Factor, y = Power, fill = Factor)) + 
   geom_bar(stat = "identity", color = "black") + 
   theme_minimal() +
   labs(title = "Effect Sizes from Final Model", x = "Predictor", y = "Effect Size (Estimate)") +
@@ -157,7 +170,17 @@ bars_final <- ggplot(plot_data, aes(x = Factor, y = Power, fill = Factor)) +
 plot_grid( bars_final, plot_openflws, plot_flwsize, plot_height, ncol = 2,
            labels = c("A", "B", "C", "D"))
 
+# fitness per population
 
+# predictions for populations
+pred_pop <- ggpredict(m_final, terms = "Pop")
 
-
-
+ggplot(pred_pop, aes(x = x, y = predicted, color = x)) +
+  geom_point(size = 4) +                       
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, size = 1) + # Διαστήματα εμπιστοσύνης
+  theme_minimal() +
+  labs(title = "Predicted Fitness by Population",
+       x = "Population",
+       y = "Predicted log(Fitness)") +
+  theme(text = element_text(size = 14), legend.position = "none") +
+  scale_color_brewer(palette = "PuRd")
