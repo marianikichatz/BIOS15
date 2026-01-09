@@ -178,7 +178,7 @@ pred_pop <- ggpredict(m_final, terms = "Pop")
 
 ggplot(pred_pop, aes(x = x, y = predicted, color = x)) +
   geom_point(size = 4) +                       
-  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, size = 1) + # Διαστήματα εμπιστοσύνης
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2, size = 1) + 
   theme_minimal() +
   labs(title = "Predicted Fitness by Population",
        x = "Population",
