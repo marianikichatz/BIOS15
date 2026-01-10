@@ -20,12 +20,6 @@ data$Pop <- as.factor(data$Pop)
 head(data) # view the first few rows of the data
 summary(data) # view a summary of the data
 
-# histogram of fitness values
-ggplot(data, aes(x = fitness)) +
-  geom_histogram(bins = 30, fill = "pink", color = "black") + 
-  theme_minimal() +
-  labs(title = " Histogram of fitness values", x = "Fitness", y = "Count")
-
 data$log_fitness <- log(data$fitness + 1) # log transform fitness values
 
 # scale continuous predictor variables
@@ -85,11 +79,21 @@ vif(m_global)
 vif(m_morph)
 vif(m_attr)
 vif(m_final) 
+vif(m_inter)
 
  # r2 for final model
 r.squaredGLMM(m_final)
 
+# r2 for interaction model
+r.squaredGLMM(m_inter)
+
 # Plots
+
+# histogram of fitness values
+ggplot(data, aes(x = fitness)) +
+  geom_histogram(bins = 30, fill = "pink", color = "black") + 
+  theme_minimal() +
+  labs(title = " Histogram of fitness values", x = "Fitness", y = "Count")
 
 # function to create prediction plots
 plot_prediction <- function(model, predictor_var, data_scaled, title_text, plot_color) {
@@ -185,6 +189,42 @@ ggplot(pred_pop, aes(x = x, y = predicted, color = x)) +
        y = "Predicted log(Fitness)") +
   theme(text = element_text(size = 14), legend.position = "none") +
   scale_color_brewer(palette = "PuRd")
+
+# interaction plots
+
+pred_int_open <- ggpredict(m_inter, terms = c("openflws_sc", "Pop")) # predictions
+
+# plot for open flowers interaction
+plot_int_open <- ggplot(pred_int_open, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
+  theme_minimal() +
+  labs(title = "Effect of Open Flowers", 
+       x = "Open Flowers (scaled)", 
+       y = "Log(Fitness)") +
+  scale_color_brewer(palette = "PuRd") +
+  scale_fill_brewer(palette = "PuRd") +
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 12, face = "bold")) 
+
+pred_int_size <- ggpredict(m_inter, terms = c("flwsize_sc", "Pop")) # predictions
+
+# plot for flower size interaction
+plot_int_size <- ggplot(pred_int_size, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15, color = NA) +
+  theme_minimal() +
+  labs(title = "Effect of Flower Size", 
+       x = "Flower Size (scaled)", 
+       y = NULL, 
+       color = "Population", fill = "Population") +
+  scale_color_brewer(palette = "PuRd") +
+  scale_fill_brewer(palette = "PuRd") +
+  theme(legend.position = "right", 
+        plot.title = element_text(size = 12, face = "bold"))
+
+plot_grid(plot_int_open, plot_int_size, ncol = 2,
+          labels = c("A", "B"))
 
 # for tables
 
